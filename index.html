@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grid Territory Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      font-family: monospace;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    #gameContainer {
+      display: flex;
+      flex-direction: row;
+      margin: 20px;
+    }
+    #gridPane {
+      display: grid;
+      grid-template-columns: repeat(50, 16px);
+      grid-template-rows: repeat(50, 16px);
+      margin-right: 20px;
+    }
+    .cell {
+      width: 15px;
+      height: 15px;
+      border: 0.01px solid darkgray;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      user-select: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="gridPane"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const ROWS = 50, COLS = 50;
+      let grid = [];
+      let cellElements = [];
+      for (let r = 0; r < ROWS; r++) {
+        grid[r] = [];
+        cellElements[r] = [];
+        for (let c = 0; c < COLS; c++) {
+          grid[r][c] = null;
+        }
+      }
+      
+      const gridPane = document.getElementById("gridPane");
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.addEventListener("click", onCellClick);
+          gridPane.appendChild(cell);
+          cellElements[r][c] = cell;
+        }
+      }
+      
+      let players = [];
+      
+      const enemyCount = 5;
+      let enemyLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+      
+      for (let i = 0; i < enemyCount; i++) {
+        let enemyId = enemyLetters[Math.floor(Math.random() * enemyLetters.length)];
+        let enemyColor = getRandomColor();
+        while (enemyColor.toUpperCase() === "#00FF00") {
+          enemyColor = getRandomColor();
+        }
+        let enemy = { id: enemyId, color: enemyColor, cells: [] };
+        players.push(enemy);
+        placeAtRandom(enemy);
+        scheduleEnemyMove(enemy);
+      }
+      
+     
+      function onCellClick(e) {
+        let row = parseInt(e.target.dataset.row);
+        let col = parseInt(e.target.dataset.col);
+        if (grid[row][col] !== null) return;
+        
+        let neighbors = getNeighbors(row, col);
+        let valid = neighbors.some(([nr, nc]) => grid[nr][nc] === player.id);
+        if (valid) {
+          claimCell(row, col, player);
+        }
+      }
+      
+      function claimCell(row, col, owner) {
+        grid[row][col] = owner.id;
+        owner.cells.push([row, col]);
+        let cell = cellElements[row][col];
+        cell.style.backgroundColor = owner.color;
+        cell.innerText = owner.id;
+      }
+      
+      function placeAtRandom(owner) {
+        let placed = false;
+        while (!placed) {
+          let r = Math.floor(Math.random() * ROWS);
+          let c = Math.floor(Math.random() * COLS);
+          if (grid[r][c] === null) {
+            claimCell(r, c, owner);
+            placed = true;
+          }
+        }
+      }
+      
+      function getNeighbors(row, col) {
+        let neighbors = [];
+        if (row > 0) neighbors.push([row - 1, col]);
+        if (row < ROWS - 1) neighbors.push([row + 1, col]);
+        if (col > 0) neighbors.push([row, col - 1]);
+        if (col < COLS - 1) neighbors.push([row, col + 1]);
+        return neighbors;
+      }
+      
+      function enemyMove(enemy) {
+        let possibleMoves = [];
+        enemy.cells.forEach(([r, c]) => {
+          getNeighbors(r, c).forEach(([nr, nc]) => {
+            if (grid[nr][nc] === null && !possibleMoves.some(coord => coord[0] === nr && coord[1] === nc)) {
+              possibleMoves.push([nr, nc]);
+            }
+          });
+        });
+        if (possibleMoves.length > 0) {
+          let move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+          claimCell(move[0], move[1], enemy);
+        }
+        scheduleEnemyMove(enemy);
+      }
+      
+      function scheduleEnemyMove(enemy) {
+        let delay = Math.random() + 0;
+        setTimeout(() => enemyMove(enemy), delay);
+      }
+      
+      function getRandomColor() {
+        let letters = "0123456789ABCDEF";
+        let color = "#";
+        for (let i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      }
+    });
+  </script>
+</body>
+</html>
